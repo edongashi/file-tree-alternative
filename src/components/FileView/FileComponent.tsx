@@ -58,15 +58,16 @@ export function FileComponent(props: FilesProps) {
         if (searchBoxVisible) searchInput.current.focus();
     }, [searchBoxVisible]);
 
-    const filesToList: OZFile[] = useMemo(
-        () =>
-            FileViewHandlers.sortedFiles({
-                fileList: ozFileList,
-                plugin: plugin,
-                ozPinnedFiles: ozPinnedFiles,
-            }),
-        [excludedFolders, excludedExtensions, ozPinnedFiles, ozFileList, plugin.settings.sortFilesBy, plugin.settings.sortReverse]
-    );
+    const filesToList: OZFile[] = useMemo(() => {
+        const files = FileViewHandlers.sortedFiles({
+            fileList: ozFileList,
+            plugin: plugin,
+            ozPinnedFiles: ozPinnedFiles,
+            activeFolderPath: activeFolderPath,
+        });
+        (window as any)._filesToList = files;
+        return files;
+    }, [excludedFolders, excludedExtensions, ozPinnedFiles, ozFileList, plugin.settings.sortFilesBy, plugin.settings.sortReverse, activeFolderPath]);
 
     // Go Back Button - Sets Main Component View to Folder
     const handleGoBack = (e: React.MouseEvent) => {

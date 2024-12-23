@@ -110,12 +110,12 @@ export const handleRevealActiveFileButton = (params: { plugin: FileTreeAlternati
 };
 
 // Sort - Filter Files Depending on Preferences
-export const sortedFiles = (params: { fileList: OZFile[]; plugin: FileTreeAlternativePlugin; ozPinnedFiles: OZFile[] }) => {
-    let { fileList, plugin, ozPinnedFiles } = params;
+export const sortedFiles = (params: { fileList: OZFile[]; plugin: FileTreeAlternativePlugin; ozPinnedFiles: OZFile[]; activeFolderPath: string }) => {
+    let { fileList, plugin, ozPinnedFiles, activeFolderPath } = params;
     let sortedfileList: OZFile[] = fileList;
     // Remove Files for Folder Note (If file name is same as parent folder name)
     if (plugin.settings.folderNote) {
-        sortedfileList = sortedfileList.filter((f) => !f.isFolderNote);
+        sortedfileList = sortedfileList.filter((f) => (f.isFolderNote ? f.parent.path !== activeFolderPath : true));
     }
     // Sort File by Name or Last Content Update, moving pinned files to the front
     sortedfileList = sortedfileList.sort((a, b) => {
