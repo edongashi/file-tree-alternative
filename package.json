@@ -5,7 +5,7 @@
     "main": "main.js",
     "scripts": {
         "dev": "rollup -c -w --bundleConfigAsCjs",
-        "build": "NODE_ENV=production rollup -c --bundleConfigAsCjs"
+        "build": "rollup -c --bundleConfigAsCjs"
     },
     "keywords": [],
     "author": "",
