@@ -95,9 +95,9 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
         const app = plugin.app;
         const vault = app.vault;
         const root = vault.getRoot();
-        const inFolderMode = activeOZFile === null;
         const activeFolder = vault.getAbstractFileByPath(activeFolderPath) as TFolder;
         const fileList = ((window as any)._filesToList ?? []) as OZFile[];
+        const inFolderMode = !activeOZFile || !fileList.some((f) => f.path === activeOZFile.path);
 
         const navigateToFolder = (folder: TFolder) => {
             if (!(folder instanceof TFolder)) {
@@ -123,16 +123,16 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
             }
         };
 
-        const navigateToFile = (file: OZFile, scrollBottom: boolean = false) => {
+        const navigateToFile = (file: OZFile, scroll?: 'top' | 'bottom') => {
             if (!file) {
                 return;
             }
             setActiveOzFile(file);
             openFile({ file, app, newLeaf: false, leafBySplit: false });
-            if (scrollBottom) {
+            if (scroll === 'top' || scroll === 'bottom') {
                 const container = document.querySelector('.oz-file-list-pane');
                 if (container) {
-                    container.scrollTop = container.scrollHeight;
+                    container.scrollTop = scroll === 'top' ? 0 : container.scrollHeight;
                 }
             } else {
                 const selector = `div.oz-file-tree-files div.oz-nav-file-title[data-path="${file.path}"]`;
@@ -188,7 +188,10 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                     const currentFileIndex = fileList.findIndex((f) => f.path === activeOZFile.path);
                     const offset = currentFileIndex < 0 ? notFoundOffset : foundOffset;
                     const futureFileIndex = (currentFileIndex + fileList.length + offset) % fileList.length;
-                    navigateToFile(fileList[futureFileIndex], futureFileIndex === fileList.length - 1);
+                    navigateToFile(
+                        fileList[futureFileIndex],
+                        futureFileIndex === fileList.length - 1 ? 'bottom' : futureFileIndex === 0 ? 'top' : undefined
+                    );
                 }
                 break;
             case 'first':
@@ -201,7 +204,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                     navigateToFolder(siblingFolders[futureFolderIndex] as TFolder);
                 } else {
                     const futureFileIndex = (fileList.length + offset) % fileList.length;
-                    navigateToFile(fileList[futureFileIndex], direction === 'last');
+                    navigateToFile(fileList[futureFileIndex], direction === 'first' ? 'top' : 'bottom');
                 }
                 break;
         }
