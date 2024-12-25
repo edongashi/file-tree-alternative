@@ -117,6 +117,10 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 openFile({ file: folderNote as any, app, newLeaf: false, leafBySplit: false });
             }
             scrollToFolder(folder, { block: 'nearest' });
+            const container = document.querySelector('.oz-file-list-pane');
+            if (container) {
+                container.scrollTop = 0;
+            }
         };
 
         const navigateToFile = (file: OZFile, scrollBottom: boolean = false) => {
@@ -152,7 +156,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 break;
             case 'up':
                 if (inFolderMode) {
-                    navigateToFolder(activeFolder.parent ?? root);
+                    navigateToFolder(activeFolder?.parent ?? root);
                 } else {
                     navigateToFolder(activeFolder);
                 }
@@ -174,7 +178,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 const foundOffset = direction === 'next' ? 1 : -1;
                 const notFoundOffset = direction === 'next' ? 1 : 0;
                 if (inFolderMode) {
-                    const siblingFolders = (activeFolder.parent ?? root).children.filter((f) => f instanceof TFolder);
+                    const siblingFolders = (activeFolder?.parent ?? root).children.filter((f) => f instanceof TFolder);
                     siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
                     const currentFolderIndex = siblingFolders.findIndex((f) => f.path === activeFolder.path);
                     const offset = currentFolderIndex < 0 ? notFoundOffset : foundOffset;
@@ -191,7 +195,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
             case 'last':
                 const offset = direction == 'first' ? 0 : -1;
                 if (inFolderMode) {
-                    const siblingFolders = (activeFolder.parent ?? root).children.filter((f) => f instanceof TFolder);
+                    const siblingFolders = (activeFolder?.parent ?? root).children.filter((f) => f instanceof TFolder);
                     siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
                     const futureFolderIndex = (siblingFolders.length + offset) % siblingFolders.length;
                     navigateToFolder(siblingFolders[futureFolderIndex] as TFolder);
