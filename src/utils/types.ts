@@ -43,6 +43,12 @@ export class CustomVaultChangeEvent extends Event {
     };
 }
 
+export class NavigationEvent extends Event {
+    detail: {
+        direction: 'root' | 'up' | 'down' | 'folder-down' | 'prev' | 'next' | 'first' | 'last';
+    };
+}
+
 export const eventTypes = {
     activeFileChange: 'fta-active-file-change',
     refreshView: 'fta-refresh-view',
@@ -50,6 +56,7 @@ export const eventTypes = {
     revealFolder: 'fta-reveal-folder',
     vaultChange: 'fta-vault-change',
     createNewNote: 'fta-create-new-note',
+    navigate: 'fta-navigate',
 };
 
 export interface BookmarksPluginItem {

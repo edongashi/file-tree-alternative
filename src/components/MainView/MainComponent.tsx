@@ -1,5 +1,5 @@
 import { TAbstractFile, TFile, TFolder, Notice } from 'obsidian';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FileComponent } from 'components/FileView/FileComponent';
 import { MainFolder } from 'components/FolderView/MainFolder';
 import { SingleViewVertical, SingleViewHorizontal } from 'components/MainView/SingleView';
@@ -9,7 +9,8 @@ import * as FileTreeUtils from 'utils/Utils';
 import * as recoilState from 'recoil/pluginState';
 import { useRecoilState } from 'recoil';
 import useForceUpdate from 'hooks/ForceUpdate';
-import { CustomVaultChangeEvent, VaultChange, eventTypes, OZFile } from 'utils/types';
+import { CustomVaultChangeEvent, VaultChange, eventTypes, OZFile, NavigationEvent } from 'utils/types';
+import { openFile } from 'utils/newFile';
 
 interface MainTreeComponentProps {
     fileTreeView: FileTreeView;
@@ -36,6 +37,14 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
     const [_showSubFolders, setShowSubFolders] = useRecoilState(recoilState.showSubFolders);
     const [focusedFolder, setFocusedFolder] = useRecoilState(recoilState.focusedFolder);
     const [activeOZFile, setActiveOzFile] = useRecoilState(recoilState.activeOZFile);
+
+    const stateRef = useRef({
+        activeFolderPath,
+        activeOZFile,
+    });
+
+    stateRef.current.activeFolderPath = activeFolderPath;
+    stateRef.current.activeOZFile = activeOZFile;
 
     const setNewFileList = (folderPath?: string) => {
         let filesPath = folderPath ? folderPath : activeFolderPath;
@@ -69,6 +78,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
         window.addEventListener(eventTypes.revealFile, handleRevealFileEvent);
         window.addEventListener(eventTypes.revealFolder, handleRevealFolderEvent);
         window.addEventListener(eventTypes.createNewNote, handleCreateNewNoteEvent);
+        window.addEventListener(eventTypes.navigate, handleNavigate);
         return () => {
             window.removeEventListener(eventTypes.vaultChange, vaultChangeEvent);
             window.removeEventListener(eventTypes.activeFileChange, changeActiveFile);
@@ -76,8 +86,122 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
             window.removeEventListener(eventTypes.revealFile, handleRevealFileEvent);
             window.removeEventListener(eventTypes.revealFolder, handleRevealFolderEvent);
             window.removeEventListener(eventTypes.createNewNote, handleCreateNewNoteEvent);
+            window.removeEventListener(eventTypes.navigate, handleNavigate);
         };
     }, []);
+
+    const handleNavigate = (evt: NavigationEvent) => {
+        const { activeFolderPath, activeOZFile } = stateRef.current;
+        const app = plugin.app;
+        const vault = app.vault;
+        const root = vault.getRoot();
+        const inFolderMode = activeOZFile === null;
+        const activeFolder = vault.getAbstractFileByPath(activeFolderPath) as TFolder;
+        const fileList = ((window as any)._filesToList ?? []) as OZFile[];
+
+        const navigateToFolder = (folder: TFolder) => {
+            if (!(folder instanceof TFolder)) {
+                return;
+            }
+            setFocusedFolder(root);
+            setActiveFolderPath(folder.path);
+            const foldersToOpen = getAllFoldersToOpen(folder);
+            foldersToOpen.shift();
+            if (foldersToOpen.length === 0) {
+                foldersToOpen.push('/');
+            }
+            setOpenFolders(foldersToOpen);
+            setActiveOzFile(null as any);
+            const folderNote = folder.children.find((f) => f instanceof TFile && f.basename === folder.name);
+            if (folderNote) {
+                openFile({ file: folderNote as any, app, newLeaf: false, leafBySplit: false });
+            }
+            scrollToFolder(folder, { block: 'nearest' });
+        };
+
+        const navigateToFile = (file: OZFile, scrollBottom: boolean = false) => {
+            if (!file) {
+                return;
+            }
+            setActiveOzFile(file);
+            openFile({ file, app, newLeaf: false, leafBySplit: false });
+            if (scrollBottom) {
+                const container = document.querySelector('.oz-file-list-pane');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            } else {
+                const selector = `div.oz-file-tree-files div.oz-nav-file-title[data-path="${file.path}"]`;
+                const fileTitleElement = document.querySelector(selector);
+                if (fileTitleElement) {
+                    fileTitleElement.scrollIntoView({ block: 'nearest' });
+                } else {
+                    const missingElement = document.querySelector('div.oz-file-tree-files > .LazyLoad:not(.is-visible)');
+                    if (missingElement) {
+                        missingElement.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            }
+        };
+
+        const direction = evt.detail.direction;
+
+        switch (direction) {
+            case 'root':
+                navigateToFolder(root);
+                break;
+            case 'up':
+                if (inFolderMode) {
+                    navigateToFolder(activeFolder.parent ?? root);
+                } else {
+                    navigateToFolder(activeFolder);
+                }
+                break;
+            case 'down':
+                if (inFolderMode) {
+                    navigateToFile(fileList[0]);
+                } else if (activeOZFile.isFolderNote) {
+                    navigateToFolder(vault.getAbstractFileByPath(activeOZFile.parent.path) as TFolder);
+                }
+                break;
+            case 'folder-down':
+                const childFolders = activeFolder.children.filter((f) => f instanceof TFolder);
+                childFolders.sort((a, b) => a.name.localeCompare(b.name));
+                navigateToFolder(childFolders[0] as TFolder);
+                break;
+            case 'prev':
+            case 'next':
+                const foundOffset = direction === 'next' ? 1 : -1;
+                const notFoundOffset = direction === 'next' ? 1 : 0;
+                if (inFolderMode) {
+                    const siblingFolders = (activeFolder.parent ?? root).children.filter((f) => f instanceof TFolder);
+                    siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
+                    const currentFolderIndex = siblingFolders.findIndex((f) => f.path === activeFolder.path);
+                    const offset = currentFolderIndex < 0 ? notFoundOffset : foundOffset;
+                    const futureFolderIndex = (currentFolderIndex + siblingFolders.length + offset) % siblingFolders.length;
+                    navigateToFolder(siblingFolders[futureFolderIndex] as TFolder);
+                } else {
+                    const currentFileIndex = fileList.findIndex((f) => f.path === activeOZFile.path);
+                    const offset = currentFileIndex < 0 ? notFoundOffset : foundOffset;
+                    const futureFileIndex = (currentFileIndex + fileList.length + offset) % fileList.length;
+                    navigateToFile(fileList[futureFileIndex], futureFileIndex === fileList.length - 1);
+                }
+                break;
+            case 'first':
+            case 'last':
+                const offset = direction == 'first' ? 0 : -1;
+                if (inFolderMode) {
+                    const siblingFolders = (activeFolder.parent ?? root).children.filter((f) => f instanceof TFolder);
+                    siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
+                    const futureFolderIndex = (siblingFolders.length + offset) % siblingFolders.length;
+                    navigateToFolder(siblingFolders[futureFolderIndex] as TFolder);
+                } else {
+                    const futureFileIndex = (fileList.length + offset) % fileList.length;
+                    navigateToFile(fileList[futureFileIndex], direction === 'last');
+                }
+                break;
+        }
+    };
 
     const handleCreateNewNoteEvent = () => {
         let currentActiveFolderPath = '/';
@@ -377,16 +501,16 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
     }
 
     // Scrolling Functions
-    function scrollToFile(fileToScroll: OZFile) {
+    function scrollToFile(fileToScroll: OZFile, arg: boolean | ScrollIntoViewOptions = false) {
         const selector = `div.oz-file-tree-files div.oz-nav-file-title[data-path="${fileToScroll.path}"]`;
         const fileTitleElement = document.querySelector(selector);
-        if (fileTitleElement) fileTitleElement.scrollIntoView(false);
+        if (fileTitleElement) fileTitleElement.scrollIntoView(arg);
     }
 
-    function scrollToFolder(folder: TFolder) {
+    function scrollToFolder(folder: TFolder, arg: boolean | ScrollIntoViewOptions = false) {
         const selector = `div.oz-folder-contents div.oz-folder-element[data-path="${folder.path}"]`;
         const folderElement = document.querySelector(selector);
-        if (folderElement) folderElement.scrollIntoView(false);
+        if (folderElement) folderElement.scrollIntoView(arg);
     }
 
     // Helper for Reveal Button: Obtain all folders that needs to be opened

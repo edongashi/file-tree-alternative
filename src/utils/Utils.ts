@@ -3,6 +3,10 @@ import FileTreeAlternativePlugin from 'main';
 import { FolderFileCountMap, FolderTree, OZFile, BookmarksPluginItem } from 'utils/types';
 import { VaultChangeModal } from 'modals';
 
+declare global {
+    const app: App;
+}
+
 // Helper Function To Get List of Files
 export const getFilesUnderPath = (params: {
     path: string;
