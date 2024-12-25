@@ -174,8 +174,16 @@ export const platformIsMobile = () => {
 export const createNewFile = async (e: React.MouseEvent | null, folderPath: string, plugin: FileTreeAlternativePlugin) => {
     let targetFolder = plugin.app.vault.getAbstractFileByPath(folderPath);
     if (!targetFolder) return;
-    let modal = new VaultChangeModal(plugin, targetFolder, 'create note');
-    modal.open();
+
+    const newFileEvent = new CustomEvent('fta-hook-new-file', {
+        detail: { folder: targetFolder },
+        cancelable: true,
+    });
+
+    if (window.dispatchEvent(newFileEvent)) {
+        let modal = new VaultChangeModal(plugin, targetFolder, 'create note');
+        modal.open();
+    }
 };
 
 export const getBookmarksPluginItems = (): BookmarksPluginItem[] => {
