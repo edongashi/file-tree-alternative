@@ -4,7 +4,7 @@ import { LocalStorageHandler } from '@ozntel/local-storage-handler';
 import { eventTypes } from 'utils/types';
 
 type FolderIcon = 'default' | 'box-folder' | 'icomoon' | 'typicon' | 'circle-gg';
-export type SortType = 'name' | 'last-update' | 'created' | 'file-size';
+export type SortType = 'name' | 'last-update' | 'created' | 'file-size' | 'smart';
 export type FolderSortType = 'name' | 'item-number';
 export type DeleteFileOption = 'trash' | 'permanent' | 'system-trash';
 export type EvernoteViewOption = 'Disabled' | 'Horizontal' | 'Vertical';

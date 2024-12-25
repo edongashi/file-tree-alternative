@@ -118,27 +118,52 @@ export const sortedFiles = (params: { fileList: OZFile[]; plugin: FileTreeAltern
         sortedfileList = sortedfileList.filter((f) => (f.isFolderNote ? f.parent.path !== activeFolderPath : true));
     }
     // Sort File by Name or Last Content Update, moving pinned files to the front
-    sortedfileList = sortedfileList.sort((a, b) => {
-        if (ozPinnedFiles.some((f) => f.path === a.path) && !ozPinnedFiles.some((f) => f.path === b.path)) {
-            return -1;
-        } else if (!ozPinnedFiles.some((f) => f.path === a.path) && ozPinnedFiles.some((f) => f.path === b.path)) {
-            return 1;
-        }
-        if (plugin.settings.sortReverse) {
-            [a, b] = [b, a];
-        }
-        if (plugin.settings.sortFilesBy === 'name') {
-            return plugin.settings.showFileNameAsFullPath
-                ? a.path.localeCompare(b.path, 'en', { numeric: true })
-                : a.basename.localeCompare(b.basename, 'en', { numeric: true });
-        } else if (plugin.settings.sortFilesBy === 'last-update') {
-            return b.stat.mtime - a.stat.mtime;
-        } else if (plugin.settings.sortFilesBy === 'created') {
-            return b.stat.ctime - a.stat.ctime;
-        } else if (plugin.settings.sortFilesBy === 'file-size') {
-            return b.stat.size - a.stat.size;
-        }
-    });
+    const { sortFilesBy, sortReverse } = plugin.settings;
+    const sortDirection = sortReverse ? -1 : 1;
+
+    if (sortFilesBy === 'smart') {
+        sortedfileList = sortedfileList.sort((a, b) => {
+            const pinnedA = ozPinnedFiles.some((f) => f.path === a.path);
+            const pinnedB = ozPinnedFiles.some((f) => f.path === b.path);
+            if (pinnedA !== pinnedB) {
+                return Number(pinnedB) - Number(pinnedA);
+            }
+            const nameA = a.basename;
+            const nameB = b.basename;
+            const hasDateA = /^\d\d\d\d-\d\d-\d\d/.test(nameA);
+            const hasDateB = /^\d\d\d\d-\d\d-\d\d/.test(nameB);
+            if (hasDateA && hasDateB) {
+                return sortDirection * nameB.localeCompare(nameA, 'en', { numeric: true });
+            } else if (hasDateA !== hasDateB) {
+                return Number(hasDateB) - Number(hasDateA);
+            } else {
+                return sortDirection * nameA.localeCompare(nameB, 'en', { numeric: true });
+            }
+        });
+    } else {
+        sortedfileList = sortedfileList.sort((a, b) => {
+            if (ozPinnedFiles.some((f) => f.path === a.path) && !ozPinnedFiles.some((f) => f.path === b.path)) {
+                return -1;
+            } else if (!ozPinnedFiles.some((f) => f.path === a.path) && ozPinnedFiles.some((f) => f.path === b.path)) {
+                return 1;
+            }
+            if (sortReverse) {
+                [a, b] = [b, a];
+            }
+            if (sortFilesBy === 'name') {
+                return plugin.settings.showFileNameAsFullPath
+                    ? a.path.localeCompare(b.path, 'en', { numeric: true })
+                    : a.basename.localeCompare(b.basename, 'en', { numeric: true });
+            } else if (sortFilesBy === 'last-update') {
+                return b.stat.mtime - a.stat.mtime;
+            } else if (sortFilesBy === 'created') {
+                return b.stat.ctime - a.stat.ctime;
+            } else if (sortFilesBy === 'file-size') {
+                return b.stat.size - a.stat.size;
+            }
+        });
+    }
+
     return sortedfileList;
 };
 
@@ -165,6 +190,7 @@ export const sortFileListClickHandle = (params: { e: React.MouseEvent; plugin: F
     addMenuItem('Created', 'New', 'Old', 'created');
     addMenuItem('File Size', 'Big', 'Small', 'file-size');
     addMenuItem('Last Update', 'New', 'Old', 'last-update');
+    addMenuItem('Smart', 'New/A', 'Old/Z', 'smart');
 
     sortMenu.addSeparator();
 
