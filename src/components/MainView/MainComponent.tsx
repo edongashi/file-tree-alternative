@@ -112,7 +112,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
             }
             setOpenFolders(foldersToOpen);
             setActiveOzFile(null as any);
-            const folderNote = folder.children.find((f) => f instanceof TFile && f.basename === folder.name);
+            const folderNote = folder.children.find((f) => f instanceof TFile && FileTreeUtils.isFolderNote(f));
             if (folderNote) {
                 openFile({ file: folderNote as any, app, newLeaf: false, leafBySplit: false });
             }
