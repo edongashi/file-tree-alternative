@@ -36,15 +36,16 @@ export function NestedFolders(props: NestedFoldersProps) {
 
     const getSortedFolderTree = (folderTree: FolderTree[]) => {
         let newTree: FolderTree[] = folderTree;
-        newTree = newTree.sort((a, b) => {
-            if (plugin.settings.sortFoldersBy === 'name') {
-                return a.folder.name.localeCompare(b.folder.name, 'en', { numeric: true });
-            } else if (plugin.settings.sortFoldersBy === 'item-number') {
+        if (plugin.settings.sortFoldersBy === 'name') {
+            newTree = Util.sortFolderTreeByName(folderTree);
+        } else if (plugin.settings.sortFoldersBy === 'item-number') {
+            newTree = newTree.sort((a, b) => {
                 let aCount = folderFileCountMap[a.folder.path] ? folderFileCountMap[a.folder.path].closed : 0;
                 let bCount = folderFileCountMap[b.folder.path] ? folderFileCountMap[b.folder.path].closed : 0;
                 return bCount - aCount;
-            }
-        });
+            });
+        }
+
         return newTree;
     };
 

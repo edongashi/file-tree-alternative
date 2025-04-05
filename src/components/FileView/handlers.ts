@@ -128,17 +128,7 @@ export const sortedFiles = (params: { fileList: OZFile[]; plugin: FileTreeAltern
             if (pinnedA !== pinnedB) {
                 return Number(pinnedB) - Number(pinnedA);
             }
-            const nameA = a.basename;
-            const nameB = b.basename;
-            const hasDateA = /^\d\d\d\d-\d\d-\d\d/.test(nameA);
-            const hasDateB = /^\d\d\d\d-\d\d-\d\d/.test(nameB);
-            if (hasDateA && hasDateB) {
-                return sortDirection * nameB.localeCompare(nameA, 'en', { numeric: true });
-            } else if (hasDateA !== hasDateB) {
-                return Number(hasDateB) - Number(hasDateA);
-            } else {
-                return sortDirection * nameA.localeCompare(nameB, 'en', { numeric: true });
-            }
+            return Util.compareByName(a.basename, b.basename, sortDirection);
         });
     } else {
         sortedfileList = sortedfileList.sort((a, b) => {

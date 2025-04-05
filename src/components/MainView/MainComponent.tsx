@@ -170,7 +170,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 break;
             case 'folder-down':
                 const childFolders = activeFolder.children.filter((f) => f instanceof TFolder);
-                childFolders.sort((a, b) => a.name.localeCompare(b.name));
+                childFolders.sort((a, b) => FileTreeUtils.compareByName(a.name, b.name));
                 navigateToFolder(childFolders[0] as TFolder);
                 break;
             case 'prev':
@@ -179,7 +179,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 const notFoundOffset = direction === 'next' ? 1 : 0;
                 if (inFolderMode) {
                     const siblingFolders = (activeFolder?.parent ?? root).children.filter((f) => f instanceof TFolder);
-                    siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
+                    siblingFolders.sort((a, b) => FileTreeUtils.compareByName(a.name, b.name));
                     const currentFolderIndex = siblingFolders.findIndex((f) => f.path === activeFolder.path);
                     const offset = currentFolderIndex < 0 ? notFoundOffset : foundOffset;
                     const futureFolderIndex = (currentFolderIndex + siblingFolders.length + offset) % siblingFolders.length;
@@ -199,7 +199,7 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
                 const offset = direction == 'first' ? 0 : -1;
                 if (inFolderMode) {
                     const siblingFolders = (activeFolder?.parent ?? root).children.filter((f) => f instanceof TFolder);
-                    siblingFolders.sort((a, b) => a.name.localeCompare(b.name));
+                    siblingFolders.sort((a, b) => FileTreeUtils.compareByName(a.name, b.name));
                     const futureFolderIndex = (siblingFolders.length + offset) % siblingFolders.length;
                     navigateToFolder(siblingFolders[futureFolderIndex] as TFolder);
                 } else {

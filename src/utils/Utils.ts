@@ -7,6 +7,25 @@ declare global {
     const app: App;
 }
 
+const ASC = 1;
+const DESC = -1;
+
+export function compareByName(a: string, b: string, direction: number = 1) {
+    const hasDateA = /^\d\d\d\d(?:$|\s|-\d\d-\d\d)/.test(a);
+    const hasDateB = /^\d\d\d\d(?:$|\s|-\d\d-\d\d)/.test(b);
+    if (hasDateA && hasDateB) {
+        return direction * b.localeCompare(a, 'en', { numeric: true });
+    } else if (hasDateA !== hasDateB) {
+        return Number(hasDateB) - Number(hasDateA);
+    } else {
+        return direction * a.localeCompare(b, 'en', { numeric: true });
+    }
+}
+
+export function sortFolderTreeByName(folders: FolderTree[]): FolderTree[] {
+    return folders.sort((a, b) => compareByName(a.folder.name, b.folder.name, ASC));
+}
+
 // Helper Function To Get List of Files
 export const getFilesUnderPath = (params: {
     path: string;
