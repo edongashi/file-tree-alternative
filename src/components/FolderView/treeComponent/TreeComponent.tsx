@@ -1,11 +1,11 @@
-import { TFolder, Notice } from 'obsidian';
-import React, { useState, useMemo, useEffect } from 'react';
-import FileTreeAlternativePlugin from 'main';
-import Dropzone from 'react-dropzone';
-import { getFolderIcon, IoMdArrowDropright } from 'utils/icons';
-import * as recoilState from 'recoil/pluginState';
-import { useRecoilState } from 'recoil';
 import useLongPress from 'hooks/useLongPress';
+import FileTreeAlternativePlugin from 'main';
+import { Notice, TFolder } from 'obsidian';
+import React, { useEffect, useMemo, useState } from 'react';
+import Dropzone from 'react-dropzone';
+import { useRecoilState } from 'recoil';
+import * as recoilState from 'recoil/pluginState';
+import { getFolderIcon, IoMdArrowDropright } from 'utils/icons';
 
 type TreeProps = {
     open?: boolean;
@@ -66,13 +66,15 @@ export default function Tree(props: TreeProps) {
 
     // --> Click Events
     const folderNameClickEvent = (ev: React.MouseEvent) => {
-        if (props.plugin.settings.folderNote && ev.shiftKey) {
+        if (props.plugin.settings.folderNote) {
             const fileFullPath = `${props.folder.path}/${props.folder.name}.md`;
             const folderNoteFile = props.plugin.app.vault.getAbstractFileByPath(fileFullPath);
-            props.plugin.app.workspace.openLinkText(fileFullPath, '/', false);
-        } else {
-            props.onClick();
+            if (folderNoteFile) {
+                props.plugin.app.workspace.openLinkText(fileFullPath, '/', false);
+            }
         }
+
+        props.onClick();
     };
     const folderContextMenuEvent = () => props.onContextMenu();
 
